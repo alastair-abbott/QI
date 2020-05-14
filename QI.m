@@ -20,6 +20,16 @@
 
 BeginPackage["QI`"]
 
+sx::usage = "sx is short for \[Sigma][1].";
+
+sy::usage = "sy is short for \[Sigma][2].";
+
+sz::usage = "sz is short for \[Sigma][3].";
+
+Id::usage="Id[d] is short for IdentityMatrix[d]."
+
+id::usage = "id is short for Id[2].";
+
 CT::usage="CT[] is short for ConjugateTranspose[]."
 
 KetV::usage="KetV[i,d] gives |i> in dimension d."
@@ -43,6 +53,10 @@ QubitPartialTrace::usage="QubitPartialTrace[M, {i, j, ...}] traces out the i, j,
 PartialTrace::usage="PartialTrace[M, dim1, dim2, tr] traces out the tr=1 or tr=2 system of M, where M represents a bipartite system of dimensions dim1 and dim2."
 
 PT::usage="PT[M, keep, desc] traces out the systems specified by keep of M which is composed of subsystems of sizes desc. Components of keep equal to 1 are kept and those equal to 0 are traced out."
+
+PTr::usage="PTr[M, sys, desc] traces out the systems specified by sys of M which is composed of subsystems of sizes desc. "
+
+PartialTranspose::usage="PartialTranspose[M, sys, desc] performs a partial transpose on the system specified by sys of M which is composed of subsystems of size desc. "
 
 BasisForm::usage="BasisForm[vec, desc] writes out a vector vec based on dimensions desc."
 
@@ -235,6 +249,16 @@ LQDecompNeg::usage="LQDecompNeg[M] outputs as RQDecomp but ensures L has negativ
 
 Begin["`Private`"]
 
+Id[d_]:=IdentityMatrix[d]
+
+sx = {{0,1},{1,0}};
+
+sy = {{0,-I},{I,0}};
+
+sz = {{1,0},{0,-1}};
+
+id = {{1,0},{0,1}};
+
 CT[M_]:=ConjugateTranspose[M]
 
 KetV[i_,d_]:=Module[{},If[i>=d||i<0,Print["KetV: input should be between 0 and d-1"]];Transpose[{UnitVector[d,i+1]}]]
@@ -260,6 +284,24 @@ QubitPartialTrace[M_,sys_]:=PT[M,Table[If[MemberQ[sys,i],0,1],{i,1,Log[2,Dimensi
 PartialTrace[mat_,dim1_,dim2_,s_]:=Module[{},If[(s==1||s==2)&&Dimensions[mat][[1]]==Dimensions[mat][[2]]==dim1*dim2,If[s==1,PT[mat,{0,1},{dim1,dim2}],PT[mat,{1,0},{dim1,dim2}]],Print["PartialTrace: input error"]]]
 
 PT[mat_,keep_,desc_]:=Module[{dim,parts,mat2,i},dim=Tr[DeleteCases[keep*desc,0],Times];parts=Join[Flatten[Position[keep,0]],Flatten[Position[keep,1]]];mat2=Partition[ExchangeSystems[mat,Permute[Range[Length[desc]],parts],desc],{dim,dim}];Sum[mat2[[i,i]],{i,1,Tr[desc,Times]/dim}]]
+
+PTr[mat_,sys_,desc_]:=PT[mat,Table[If[MemberQ[Flatten[{sys}],i],0,1],{i,Length[desc]}],desc]
+
+ListReshape[list_, shape_] := FlattenAt[Fold[Partition[#1, #2] &, Flatten[list], Reverse[shape]], 1];
+
+PartialTranspose[mat_,sys_,desc_]:=Module[{offset,tensor,perm,idx1,idx2,s,targetsys},
+	offset=Length[desc];
+	tensor=ListReshape[mat, Join[desc,desc]];
+	targetsys=Flatten[{sys}];
+	perm=Range[offset*2];
+	For[s=1, s<=Length[targetsys], s+=1, 
+		idx1 = Position[perm, targetsys[[s]]][[1, 1]];
+		idx2 = Position[perm, targetsys[[s]] + offset][[1, 1]];
+		{perm[[idx1]],perm[[idx2]]}={perm[[idx2]],perm[[idx1]]};
+	];
+	tensor=Transpose[tensor,InversePermutation[perm]];
+	ListReshape[tensor,Dimensions[mat]]
+];
 
 BasisForm[vec_,desc_]:=Module[{i,dim,v=Flatten[vec]},dim=Tr[desc,Times];For[i=1,i<=dim,i++,If[v[[i]]!=0,Print[v[[i]],"|"<>StringDrop[StringDrop[ToString[IntDigs[i-1,desc]],1],-1]<>">"]]]]
 
