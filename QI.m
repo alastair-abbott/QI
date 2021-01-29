@@ -94,7 +94,7 @@ ChoiChannel::usage="ChoiChannel[state, dA, dB] computes the channel correspondin
 
 ChannelCompress::usage="ChannelCompress[channel] takes a Kraus representation of a channel and returns another Kraus representation of the channel that may have fewer Kraus operators."
 
-ExtremeChannelQ::usage="ExtremeChannelQ[channel] checks whether the channel is extremal or not."
+ExtremeChannelQ::usage="ExtremeChannelQ[channel, (tol)] checks whether the channel is extremal or not. tol is an optional argument specifying the tolerance for numerical singular values to be treated as zero."
 
 PickRandomPsi::usage="PickRandomPsi[n] chooses a random pure state in dimension n."
 
@@ -307,7 +307,7 @@ BasisForm[vec_,desc_]:=Module[{i,dim,v=Flatten[vec]},dim=Tr[desc,Times];For[i=1,
 
 BasisFormS[vec_,desc_]:=Module[{i,dim,string,v=Flatten[vec]},string="";dim=Tr[desc,Times];For[i=1,i<=dim,i++,If[v[[i]]>0,string=string<>"+"<>ToString[v[[i]],FormatType->StandardForm]<>"|"<>StringDrop[StringDrop[ToString[IntDigs[i-1,desc]],1],-1]<>"> ",If[v[[i]]<0,string=string<>ToString[v[[i]],FormatType->StandardForm]<>"|"<>StringDrop[StringDrop[ToString[IntDigs[i-1,desc]],1],-1]<>"> "]]];string]
 
-Purify[rho_]:=Module[{dim,vals,vecs},dim=Dimensions[rho][[1]];{vals,vecs}=Eigensystem[rho];Sum[(vals[[i]])^(1/2)*Transpose[{vecs[[i]]}]\[CircleTimes]Transpose[{vecs[[i]]}],{i,1,dim}]]
+Purify[rho_]:=Module[{dim,vals,vecs},dim=Dimensions[rho][[1]];{vals,vecs}=Eigensystem[rho];vecs=Orthogonalize[vecs];Sum[(vals[[i]])^(1/2)*Transpose[{vecs[[i]]}]\[CircleTimes]Transpose[{vecs[[i]]}],{i,1,dim}]]
 
 SchmidtDecomposition[vec_,sys_]:=Module[{coeffs,vecsa,vecsb,u,w,v,vecmat,i},If[Tr[sys,Times]!=Dimensions[vec][[1]],Print["SchmidtDecomposition: Wrong dimensions"];Break[]];vecmat=Partition[Flatten[vec],sys[[2]]];{u,w,v}=SingularValueDecomposition[vecmat];coeffs={};vecsa={};vecsb={};For[i=1,i<=Min[sys],i++,coeffs=Insert[coeffs,w[[i,i]],-1];vecsa=Insert[vecsa,Transpose[{Transpose[u][[i]]}],-1];vecsb=Insert[vecsb,Transpose[{CT[v][[i]]}],-1]];{coeffs,vecsa,vecsb}]
 
@@ -345,7 +345,9 @@ ChoiChannel[state_,dA_,dB_]:=Module[{set1={},set2={},i,j,w1,w2,u,d,v},{u,d,v}=Si
 
 ChannelCompress[chan_]:=Module[{n,dA,dB},{n,dB,dA}=Dimensions[chan];ChoiChannel[ChoiState[chan], dA, dB][[1]]]
 
-ExtremeChannelQ[list_]:=Module[{dim=Dimensions[list][[1]],i,j,newlist},newlist={};For[i=1,i<=dim,i++,For[j=1,j<=dim,j++,newlist=Insert[newlist,Flatten[CT[list[[i]]].list[[j]]],-1]]];If[MatrixRank[Chop[newlist]]==dim^2,True,False]]
+ExtremeChannelQ[list_]:=Module[{dim=Dimensions[list][[1]],i,j,newlist},newlist={};For[i=1,i<=dim,i++,For[j=1,j<=dim,j++,newlist=Insert[newlist,Flatten[CT[list[[i]]].list[[j]]],-1]]];If[MatrixRank[newlist]==dim^2,True,False]]
+
+ExtremeChannelQ[list_,tol_]:=Module[{dim=Dimensions[list][[1]],i,j,newlist},newlist={};For[i=1,i<=dim,i++,For[j=1,j<=dim,j++,newlist=Insert[newlist,Flatten[CT[list[[i]]].list[[j]]],-1]]];If[Dimensions[DeleteCases[Chop[SingularValueList[newlist],tol],0]][[1]]==dim^2,True,False]]
 
 PickRandomPsi[n_]:=Module[{psi,i,phi},psi={};For[i=1,i<=n,i++,phi=Random[]*2*\[Pi];psi=Insert[psi,{Random[]*(Cos[phi]+I*Sin[phi])},-1]];psi/(Tr[Conjugate[Transpose[psi]].psi])^(1/2)]
 
