@@ -323,7 +323,7 @@ SimultaneouslyDiagonalize[A_,B_,precision_:Null]:=Module[{vals,vecs,unitary,bloc
 
 BlochSphere[rho_]:=Module[{x,y,z},x=Tr[rho.\[Sigma][1]];y=Tr[rho.\[Sigma][2]];z=Tr[rho.\[Sigma][3]];{{x},{y},{z}}]     
 
-FromBlochSphere[{{x_},{y_},{z_}}]:=Simplify[(1/2)*(IdentityMatrix[2]+x*\[Sigma][1]+y*\[Sigma][2]+z*\[Sigma][3])]
+FromBlochSphere[{x_,y_,z_}]:=Simplify[(1/2)*(IdentityMatrix[2]+x*\[Sigma][1]+y*\[Sigma][2]+z*\[Sigma][3])]
 
 AppendCols[m_]:=Module[{vec,mat,dim},(dim=Dimensions[m];mat=Transpose[m];mat=Join[mat,Table[ConstantArray[0,dim[[1]]],{dim[[1]]-dim[[2]]}]];vec=NullSpace[mat];mat[[-Length[vec];;-1]]=Conjugate[vec];mat=Map[Normalize,mat];Transpose[mat])]
 
